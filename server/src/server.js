@@ -2,38 +2,43 @@ require('dotenv').config();
 
 const Koa = require('koa');
 const Router = require('koa-router');
-const db = require('database');
+const koaBody = require('koa-body');
+
+const database = require('database');
+const { associate, sync } = require('./database/sync');
 
 const { PORT } = process.env;
-export default class Server {
-  constructor() {
-    this.app = new Koa();
-    this.router = new Router();
-    this.middleware();
-    this.initializeDB();
-  }
 
-  initializeDB() {
-    db.authenticate().then(
-      () => {
-        associate();
-        console.log('DB Connection has been established');
-      },
-      (err) => {
-        console.log('Unable to connect to the DB:', err);
-      }
-    );
-  }
+const app = new Koa();
+const router = new Router();
 
-  middleware() {
-    const { app, router } = this;
+const Server = {
+  initializeDB: () => {
+    database.authenticate()
+      .then(
+        () => {
+          associate();
+          sync();
+          console.log('DB connection has been established');
+        }
+      )
+      .catch(err => {
+        console.error('Unable to connect to the database:', err);
+      });
+  },
+
+  middleware: () => {
+    app.use(koaBody({ jsonLimit: '20mb', multipart: true }));
     app.use(router.routes()).use(router.allowedMethods());
-  }
+  },
 
-  listen() {
-    const { app } = this;
+  listen: () => {
     app.listen(PORT, () => {
-      console.log(`Server is running, port number is ${PORT}`);
+      console.log(`Server is running, listen port number is ${PORT}`);
     });
   }
-}
+};
+
+Server.initializeDB();
+Server.middleware();
+Server.listen();

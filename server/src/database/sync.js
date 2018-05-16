@@ -1,7 +1,11 @@
-import {
+const { UserProfile, User } = require('./models');
 
-} from './models';
+exports.associate = () => {
+  UserProfile.associate();
+};
 
-export function associate() {
-  
-}
+exports.sync = () => {
+  exports.associate();
+  User.sync();
+  UserProfile.sync();
+};
